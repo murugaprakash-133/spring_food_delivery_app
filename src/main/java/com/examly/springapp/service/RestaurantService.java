@@ -2,13 +2,15 @@ package com.examly.springapp.service;
 
 import com.examly.springapp.entity.Restaurant;
 import com.examly.springapp.repository.RestaurantRepository;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class RestaurantService {
 
     private final RestaurantRepository restaurantRepository;
@@ -21,8 +23,25 @@ public class RestaurantService {
         return restaurantRepository.save(restaurant);
     }
 
-    public List<Restaurant> getAllRestaurants() {
-        return restaurantRepository.findAll();
+    public Page<Restaurant> getAllRestaurants(int page, int size, String sortBy, String sortDir) {
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return restaurantRepository.findAll(pageable);
+    }
+
+    public Page<Restaurant> searchRestaurants(String searchTerm, int page, int size, String sortBy, String sortDir) {
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return restaurantRepository.searchWithSorting(searchTerm, sortBy, pageable);
+    }
+
+    public Page<Restaurant> filterByCuisine(String cuisine, int page, int size, String sortBy, String sortDir) {
+        Sort sort = Sort.by(sortDir.equalsIgnoreCase("desc") ? 
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return restaurantRepository.filterByCuisineWithSorting(cuisine, sortBy, pageable);
     }
 
     public Optional<Restaurant> getRestaurantById(Long id) {
@@ -34,6 +53,8 @@ public class RestaurantService {
             existingRestaurant.setName(updatedRestaurant.getName());
             existingRestaurant.setAddress(updatedRestaurant.getAddress());
             existingRestaurant.setCuisine(updatedRestaurant.getCuisine());
+            existingRestaurant.setPhoneNumber(updatedRestaurant.getPhoneNumber());
+            existingRestaurant.setOpeningHours(updatedRestaurant.getOpeningHours());
             return restaurantRepository.save(existingRestaurant);
         });
     }
@@ -45,7 +66,7 @@ public class RestaurantService {
         }).orElse(false);
     }
 
-    public List<Restaurant> getPaginatedRestaurants(int page, int size) {
-        return restaurantRepository.findAll(PageRequest.of(page, size)).getContent();
+    public List<String> getAllCuisineTypes() {
+        return restaurantRepository.findAllCuisineTypes();
     }
 }

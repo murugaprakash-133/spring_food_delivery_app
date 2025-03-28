@@ -2,13 +2,13 @@ package com.examly.springapp.service;
 
 import com.examly.springapp.entity.User;
 import com.examly.springapp.repository.UserRepository;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
@@ -29,8 +29,8 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public List<User> getAllUsers(int page, int size) {
-        return userRepository.findAll(PageRequest.of(page, size)).getContent();
+    public Optional<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
     public Optional<User> updateUser(Long id, User updatedUser) {
@@ -47,5 +47,23 @@ public class UserService {
             userRepository.delete(user);
             return true;
         }).orElse(false);
+    }
+
+    public Page<User> getAllUsers(int page, int size, String sortBy, String sortOrder) {
+        Sort sort = sortOrder.equalsIgnoreCase("desc") 
+            ? Sort.by(sortBy).descending() 
+            : Sort.by(sortBy).ascending();
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return userRepository.findAll(pageable);
+    }
+
+    public Page<User> searchUsers(String searchTerm, int page, int size, String sortBy, String sortOrder) {
+        Sort sort = sortOrder.equalsIgnoreCase("desc") 
+            ? Sort.by(sortBy).descending() 
+            : Sort.by(sortBy).ascending();
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return userRepository.searchUsers(searchTerm, pageable);
     }
 }

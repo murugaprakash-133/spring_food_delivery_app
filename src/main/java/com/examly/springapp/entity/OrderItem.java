@@ -1,65 +1,63 @@
 package com.examly.springapp.entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Entity
+@Table(name = "order_items")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderItem {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private int quantity;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private OrderEntity order;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "menu_item_id", nullable = false)
     private MenuItem menuItem;
 
-    // ✅ Method to retrieve item name
+    @Column(nullable = false)
+    private Integer quantity;
+
+    @Column(name = "price_at_order_time", nullable = false, columnDefinition = "DECIMAL(10,2)")
+    private Double priceAtOrderTime;
+
+    @Column(name = "item_name_at_order_time", nullable = false)
+    private String itemNameAtOrderTime;
+
+    @Column(nullable = false, columnDefinition = "DECIMAL(10,2)")
+    private Double subtotal;
+
+    @Transient
+    public Double getTotalPrice() {
+        return priceAtOrderTime * quantity;
+    }
+
+    @Transient
     public String getItemName() {
-        return menuItem != null ? menuItem.getName() : null;
+        return itemNameAtOrderTime;
     }
 
-    // ✅ Method to get price (assumes MenuItem has getPrice())
-    public double getPrice() {
-        return menuItem != null ? menuItem.getPrice() * quantity : 0.0;
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public OrderEntity getOrder() {
-        return order;
-    }
-
-    public void setOrder(OrderEntity order) {
-        this.order = order;
-    }
-
-    public MenuItem getMenuItem() {
-        return menuItem;
-    }
-
-    public void setMenuItem(MenuItem menuItem) {
-        this.menuItem = menuItem;
+    @PrePersist
+    @PreUpdate
+    public void updateOrderDetails() {
+        if (menuItem != null) {
+            if (priceAtOrderTime == null) {
+                priceAtOrderTime = menuItem.getPrice();
+            }
+            if (itemNameAtOrderTime == null) {
+                itemNameAtOrderTime = menuItem.getName();
+            }
+            if (quantity != null && priceAtOrderTime != null) {
+                this.subtotal = quantity * priceAtOrderTime;
+            }
+        }
     }
 }
